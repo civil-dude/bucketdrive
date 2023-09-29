@@ -27,3 +27,4 @@ server/bucket/api/__pycache__
 server/bucket/bucket/__pycache__
 server/bucket/api/migrations
 server/env
+test/
