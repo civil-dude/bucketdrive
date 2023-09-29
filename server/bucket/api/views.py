@@ -39,13 +39,18 @@ class PaperFetchView(APIView):
         print("Url : ", req)
         
         # Check if the paper already exists in the database
-        if Paper.objects.filter(PaperLink=req).exists():
-            paper = Paper.objects.get(PaperLink=req)
-            serializer = PaperSerializer(paper)
-            print("Data is outputing from here : ", serializer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        try: 
+            if Paper.objects.filter(PaperLink=req).exists():
+                paper = Paper.objects.get(PaperLink=req)
+                serializer = PaperSerializer(paper)
+                print("Data is outputing from here : ", serializer)
+                return Response(serializer.data, status=status.HTTP_200_OK)
         
+        except Exception as err:
+            print(err) 
+        #Response(err, status=status.HTTP_400_BAD_REQUEST)
         # If the paper doesn't exist, fetch the details from the source
+        
         ret = extract_paper_info(req)
         
         if ret:
