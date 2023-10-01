@@ -25,7 +25,7 @@ const AddPage = () => {
           url: addlink,
         }
       });
-      console.log(typeof(response.data))
+      console.log(response.data)
       if (response.data.Title && response.data.Authors && response.data.Abstract && response.data.Pdf){
       const {Title, Authors, Abstract, Pdf} = response.data;
       const tags = ['']

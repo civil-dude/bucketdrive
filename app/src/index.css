@@ -22,6 +22,7 @@ body {
   top: 0;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
+
 .App-header h1 {
   font-family: 'Rubik', sans-serif;
   font-size: 2.5rem;
@@ -75,6 +76,8 @@ body {
 
 .pdf__page {
   font-size: 1.5rem;
+  max-height: 100rem;
+  overflow-y: auto;
 }
 
 .button__container {
@@ -82,3 +85,24 @@ body {
   justify-content:space-around;
   margin-top: 2rem;
 }
+
+.button__container > button{
+  cursor: pointer;
+}
+
+.pdf__menu {
+  
+  position: absolute;
+  top: calc(${selectedTextPosition.top}px-50px); /* Adjust the value as needed */
+  left: calc(${selectedTextPosition.left}px-50px); /* Adjust the value as needed */
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  z-index: 999; /* Ensure the menu is above the text */
+  display: flex;
+  flex-direction: row;
+  margin-right: 0;
+  margin-left: 0;
+
+}
+

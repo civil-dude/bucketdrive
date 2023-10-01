@@ -4,7 +4,7 @@ import { useEffect, useState} from "react";
 import axios from "axios";             
 import {Page, Document, pdfjs} from 'react-pdf';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHighlighter} from "@fortawesome/free-solid-svg-icons";
+import { faHighlighter, faBookmark} from "@fortawesome/free-solid-svg-icons";
 
 const DetailPage = () => {
     pdfjs.GlobalWorkerOptions.workerSrc = 
@@ -20,15 +20,16 @@ const DetailPage = () => {
 
     const [selectedText, setSelectedText] = useState("");
     const [isTextSelected, setIsTextSelected] = useState(false);
+    const [selectedTextPosition, setSelectedTextPosition] = useState({top: 0, left: 0});
 
-    // highlight pen stuff
-    const [highlighted, setHightlighted] = useState(false);
+    // bookmarks
+    const  [bookmarks, setBookMarks] = useState([]);
 
 
     //const location = useLocation();
     //console.log("PaperID : ", paperID)
     const paperLink = `https://arxiv.org/abs/${paperId}`;
-
+    
     useEffect(() => {
         const fetchPaperDetails = async () => {
             try{
@@ -37,8 +38,7 @@ const DetailPage = () => {
                     url: paperLink,
                    } 
                 });
-                console.log("Response type : ", typeof(response.data));
-                console.log("Title : ", response.data.Title);
+                console.log("Response : ", response);
                 if (response.data.Title && response.data.Authors && response.data.Abstract && response.data.Pdf){
                     const {Title, Authors, Abstract, Pdf} = response.data;
                     console.log(Title,Authors, Abstract)
@@ -48,7 +48,7 @@ const DetailPage = () => {
                     const pdfLink: string = response.data[3]
                     setPaperData({ pdfLink })
                 } else {
-                    console.error('Invalid response format : ', response.data);
+                    console.error('Invalid response format : ', response);
                 }
 
             } catch (error){
@@ -56,8 +56,27 @@ const DetailPage = () => {
             
             }
         }
+       
         fetchPaperDetails();
-    },[paperLink])
+    },[paperLink, paperId])
+    
+    useEffect(() => {
+
+        const fetchBookmarksForPaper = async () => {
+            try {
+                const response = await axios.get(`http://127.0.0.1:8000/api/paper/${paperId}/bookmarks/`)
+                const bookmarks = response.data.bookmarks; 
+                console.log("Bookmarks : ",bookmarks);
+            }
+            catch(error){
+                console.error(error)
+            }
+        };
+        fetchBookmarksForPaper();
+
+    },[paperId])
+
+    
 
     const onDocumentLoadSuccess = ({numPages} : {numPages: number}) => {
         setNumPages(numPages);
@@ -76,24 +95,48 @@ const DetailPage = () => {
     }
 
     const handleBookMark = () => {
+        try{
         if(isTextSelected){
             // capture the text selected and its page number
-            const bookmark = {
+            const bookmarkData = {
                 page: pageNumber,
                 text: selectedText,
+                paper_id: paperId,
             };
-            console.log("Bookmark : ", bookmark);
-        } 
+            console.log("Bookmark : ",bookmarkData);
+            const req = axios.post(`http://127.0.0.1:8000/api/paper/${paperId}/bookmarks/create/`, bookmarkData)
+            .then(response => {
+                console.log(response);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+        }}
+        catch(error){
+            console.error(error);
+        }
     };
+
     const handleTextSelection = () => {
-        const selectedText = window.getSelection()?.toString().trim() || "";
+        const selectedText = window.getSelection()?.toString().trim() || " ";
         setSelectedText(selectedText);
         setIsTextSelected(selectedText !== "");
-    };
 
-    const handleHightlighter = () => {
+        if (selectedText !== ""){
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0){
+            const range = selection?.getRangeAt(0);
+            const rect = range?.getBoundingClientRect();
+            setSelectedTextPosition({
+                top: rect?.top + window.scrollY,
+                left: rect?.left + window.scrollX,
+            });
+        } else {
+            setSelectedTextPosition({top: 0, left: 0});
+        }
+    }}
 
-    }
+   
 
     useEffect(() => {
         // add a listener for text selection
@@ -111,27 +154,43 @@ const DetailPage = () => {
                  <div className="button__container">
                    <button className="bg-white-500 hover:bg-cyan-500 text-black font-bold py-2 px-4 rounded" onClick={handlePrevPage} disabled={pageNumber === 1}>Previous</button>
                    <button className="bg-white-500 hover:bg-cyan-500 text-black font-bold py-2 px-4 rounded" onClick={handleNextPage} disabled={pageNumber === numPages}>Next</button>
-                   {isTextSelected && (
-                    <div className="pdf__menu">                                    
-                 <button  onClick={handleBookMark}>BookMark</button>
-                 <FontAwesomeIcon icon={faHighlighter} style={{color:"#f26418"}} onClick={handleHightlighter} />                  </div>
-                )}
-
+                   {/* {bookmarks.length > 0 && (
+                       <select className="bookmark__dropdown">
+                           {bookmarks.map((bookmark: { page: number, text: string }, index: number) => (
+                               <option key={index} value={bookmark.page}>
+                                   {bookmark.text}
+                               </option>
+                           ))}
+                       </select>
+                   )} */}
                    </div>
-                 <Document className="pdf__canvas"
-                 file={paperData.pdfLink}
-                 onLoadSuccess={onDocumentLoadSuccess}> 
-                 <Page className="pdf__page" pageNumber={pageNumber} />
-                 </Document>
-               
+                   {isTextSelected && (
+                    <div className="pdf__menu" style={{
+                        top: `${selectedTextPosition.top}px`,
+                        left: `${selectedTextPosition.left}px`,
+                    }}>                                    
+                <FontAwesomeIcon 
+                    icon={faBookmark} 
+                    style={{
+                        fontSize: 20, 
+                        marginTop: 10, 
+                        marginRight: 20, 
+                        marginLeft: 30,
+                        transition: "font-size 0.3s, color 0.3s",
+                        cursor: "pointer",
+                    }} 
+                    onClick={handleBookMark} />
+
+             </div>
+                )}
+                <Document className="pdf__canvas" file={paperData.pdfLink} onLoadSuccess={onDocumentLoadSuccess}> 
+                   <Page className="pdf__page" pageNumber={pageNumber} />
+                </Document>
                 <p>
                     Page {pageNumber} of {numPages}
                  </p>
-                
              </div>
-            
            }
-        
         </div>
     )
 }

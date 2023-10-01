@@ -24,6 +24,7 @@ router.register(r'papers', views.PaperViewSet, basename='Paper')
 urlpatterns = [
     path('api/', include(router.urls)),
     path('api/fetch-paper/', views.PaperFetchView.as_view(), name='paper-fetch-api'),
-
+    path('api/paper/<str:paperId>/bookmarks/', views.PaperBookmarksView.as_view(), name='paper-bookmarks'),
+    path('api/paper/<str:paperId>/bookmarks/create/', views.BookmarkCreateView.as_view(), name='bookmark-create')
 ]
 
