@@ -1,8 +1,10 @@
 import { useParams } from "react-router-dom";
 import '../index.css';
-import { useEffect, useState} from "react";
+import React, { useEffect, useState} from "react";
 import axios from "axios";             
 import {Page, Document, pdfjs} from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import "react-pdf/dist/esm/Page/TextLayer.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHighlighter, faBookmark} from "@fortawesome/free-solid-svg-icons";
 
@@ -94,32 +96,77 @@ const DetailPage = () => {
         }
     }
 
-    const handleBookMark = () => {
+    const handleBookMark = ( event: React.MouseEvent<SVGSVGElement,MouseEvent>) => {
         try{
-        if(isTextSelected){
-            // capture the text selected and its page number
-            const bookmarkData = {
-                page: pageNumber,
-                text: selectedText,
-                paper_id: paperId,
-            };
-            console.log("Bookmark : ",bookmarkData);
-            const req = axios.post(`http://127.0.0.1:8000/api/paper/${paperId}/bookmarks/create/`, bookmarkData)
-            .then(response => {
-                console.log(response);
-            })
-            .catch(error => {
+            const selectedText = window.getSelection()?.toString().trim() || "";
+            if(isTextSelected && selectedText?.length > 0){
+                // capture the text selected and its page number
+                console.log("selected Text : ", selectedText)
+
+                const bookmarkData = {
+                    page: pageNumber,
+                    text: selectedText,
+                    paper_id: paperId,
+                };
+                console.log("Bookmark : ",bookmarkData);
+                const req = axios.post(`http://127.0.0.1:8000/api/paper/${paperId}/bookmarks/create/`, bookmarkData)
+                .then(response => {
+                    console.log(response);
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+            }}
+            catch(error){
                 console.error(error);
-            });
-        }}
-        catch(error){
-            console.error(error);
+            }
+        };
+
+    const handleHighlight = (event: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+        // check if text is selected
+        try {
+            const selectedText = window.getSelection()?.toString().trim() || "";
+        if (isTextSelected && selectedText?.length > 0 ){
+            // Capture the selected text and its position
+            const highlightData = {
+               page: pageNumber,
+               text: selectedText, 
+               paper_id: paperId,
+               // add color or other highlight data here
+            };
+            console.log("Highlight : ", highlightData);
+            /**
+             * creating the highlight element
+             * 
+            */
+           const highlightElement = document.createElement('span');
+           highlightElement.style.backgroundColor = 'yellow';
+           highlightElement.style.display = 'inline';
+           highlightElement.style.padding = '0';
+           highlightElement.style.margin = '0'
+           
+           // wrap the selected text with the highlight element
+           const selection = window.getSelection();
+           const range = selection?.getRangeAt(0);
+           range?.surroundContents(highlightElement);
+
+           // clear the selection
+           selection?.removeAllRanges();
+
+           // reset the text selection state
+           setSelectedText('');
+           setIsTextSelected(false);
         }
+    }
+    catch(error){console.error(error)}
     };
+
+
 
     const handleTextSelection = () => {
         const selectedText = window.getSelection()?.toString().trim() || " ";
         setSelectedText(selectedText);
+        console.log("Selected Text : ", selectedText);
         setIsTextSelected(selectedText !== "");
 
         if (selectedText !== ""){
@@ -147,8 +194,14 @@ const DetailPage = () => {
     },[]);
 
 
+    const generateSummary = () => {
+        console.log('using llama2 and langchain to generate summaries of paper : ' )
+    }
+
+
     return (
         <div className="Detail__Page">
+            <span className="bg-white-500 hover:bg-gray-100 text-black font-bold py-2 px-4 rounded" onClick={generateSummary}>Use AI Summary 🪄  ? </span>
            {paperData &&  
             <div className="pdf__viewer">
                  <div className="button__container">
@@ -181,10 +234,23 @@ const DetailPage = () => {
                     }} 
                     onClick={handleBookMark} />
 
+                <FontAwesomeIcon 
+                    icon={faHighlighter} 
+                    style={{
+                        fontSize: 20, 
+                        marginTop: 10, 
+                        marginRight: 20, 
+                        marginLeft: 30,
+                        transition: "font-size 0.3s, color 0.3s",
+                        cursor: "pointer",
+                    }} 
+                    onClick={handleHighlight} />
+
+
              </div>
                 )}
                 <Document className="pdf__canvas" file={paperData.pdfLink} onLoadSuccess={onDocumentLoadSuccess}> 
-                   <Page className="pdf__page" pageNumber={pageNumber} />
+                   <Page className="pdf__page" pageNumber={pageNumber} renderTextLayer={true} />
                 </Document>
                 <p>
                     Page {pageNumber} of {numPages}
