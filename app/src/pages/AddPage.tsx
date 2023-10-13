@@ -61,7 +61,7 @@ const AddPage = () => {
         <input
           type="url"
           pattern="https?://.+\.edu/.+|https?://arxiv.org/.+|https?://.+\.ac\.uk/.+|https?://.+\.edu\.au/.+|https?://.+\.gov/.+|https?://.+\.arxiv\.org/.+|https?://.+\.biorxiv\.org/.+"
-          placeholder="Enter research paper link"
+          placeholder="Official Research Paper Url"
           value={addlink}
           onChange={(e) => setAddLink(e.target.value)}
           className="flex-grow border-2 p-2 rounded-md"
