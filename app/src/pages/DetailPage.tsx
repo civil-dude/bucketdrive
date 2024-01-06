@@ -16,6 +16,7 @@ const DetailPage = () => {
     //const [pdfLink, setPdfLink] = useState<string | null>(null);    
     const [numPages,setNumPages] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<number>(1);
+    const [zoomLevel, setZoomLevel] = useState<number>(1);
     const [paperData, setPaperData] = useState<{pdfLink: string}| null>(null);
 
     // bookmarking stuff
@@ -96,159 +97,16 @@ const DetailPage = () => {
         }
     }
 
-    const handleBookMark = ( event: React.MouseEvent<SVGSVGElement,MouseEvent>) => {
-        try{
-            const selectedText = window.getSelection()?.toString().trim() || "";
-            if(isTextSelected && selectedText?.length > 0){
-                // capture the text selected and its page number
-                console.log("selected Text : ", selectedText)
-
-                const bookmarkData = {
-                    page: pageNumber,
-                    text: selectedText,
-                    paper_id: paperId,
-                };
-                console.log("Bookmark : ",bookmarkData);
-                const req = axios.post(`http://127.0.0.1:8000/api/paper/${paperId}/bookmarks/create/`, bookmarkData)
-                .then(response => {
-                    console.log(response);
-                })
-                .catch(error => {
-                    console.error(error);
-                });
-            }}
-            catch(error){
-                console.error(error);
-            }
-        };
-
-    const handleHighlight = (event: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-        // check if text is selected
-        try {
-            const selectedText = window.getSelection()?.toString().trim() || "";
-        if (isTextSelected && selectedText?.length > 0 ){
-            // Capture the selected text and its position
-            const highlightData = {
-               page: pageNumber,
-               text: selectedText, 
-               paper_id: paperId,
-               // add color or other highlight data here
-            };
-            console.log("Highlight : ", highlightData);
-            /**
-             * creating the highlight element
-             * 
-            */
-           const highlightElement = document.createElement('span');
-           highlightElement.style.backgroundColor = 'yellow';
-           highlightElement.style.display = 'inline';
-           highlightElement.style.padding = '0';
-           highlightElement.style.margin = '0'
-           
-           // wrap the selected text with the highlight element
-           const selection = window.getSelection();
-           const range = selection?.getRangeAt(0);
-           range?.surroundContents(highlightElement);
-
-           // clear the selection
-           selection?.removeAllRanges();
-
-           // reset the text selection state
-           setSelectedText('');
-           setIsTextSelected(false);
-        }
-    }
-    catch(error){console.error(error)}
-    };
-
-
-
-    const handleTextSelection = () => {
-        const selectedText = window.getSelection()?.toString().trim() || " ";
-        setSelectedText(selectedText);
-        console.log("Selected Text : ", selectedText);
-        setIsTextSelected(selectedText !== "");
-
-        if (selectedText !== ""){
-            const selection = window.getSelection();
-            if (selection && selection.rangeCount > 0){
-            const range = selection?.getRangeAt(0);
-            const rect = range?.getBoundingClientRect();
-            setSelectedTextPosition({
-                top: rect?.top + window.scrollY,
-                left: rect?.left + window.scrollX,
-            });
-        } else {
-            setSelectedTextPosition({top: 0, left: 0});
-        }
-    }}
-
-   
-
-    useEffect(() => {
-        // add a listener for text selection
-        document.addEventListener("mouseup", handleTextSelection);
-        return () => {
-            document.removeEventListener("mouseup", handleTextSelection);
-        };
-    },[]);
-
-
-    const generateSummary = () => {
-        console.log('using llama2 and langchain to generate summaries of paper : ' )
-    }
-
-
     return (
         <div className="Detail__Page">
-            <span className="bg-white-500 hover:bg-gray-100 text-black font-bold py-2 px-4 rounded" onClick={generateSummary}>Use AI Summary 🪄  ? </span>
+           {/* <span className="bg-white-500 hover:bg-gray-100 text-black font-bold py-2 px-4 rounded" onClick={generateSummary}>Use AI Summary 🪄  ? </span>*/}
            {paperData &&  
             <div className="pdf__viewer">
                  <div className="button__container">
                    <button className="bg-white-500 hover:bg-cyan-500 text-black font-bold py-2 px-4 rounded" onClick={handlePrevPage} disabled={pageNumber === 1}>Previous</button>
                    <button className="bg-white-500 hover:bg-cyan-500 text-black font-bold py-2 px-4 rounded" onClick={handleNextPage} disabled={pageNumber === numPages}>Next</button>
-                   {/* {bookmarks.length > 0 && (
-                       <select className="bookmark__dropdown">
-                           {bookmarks.map((bookmark: { page: number, text: string }, index: number) => (
-                               <option key={index} value={bookmark.page}>
-                                   {bookmark.text}
-                               </option>
-                           ))}
-                       </select>
-                   )} */}
-                   </div>
-                   {isTextSelected && (
-                    <div className="pdf__menu" style={{
-                        top: `${selectedTextPosition.top}px`,
-                        left: `${selectedTextPosition.left}px`,
-                    }}>                                    
-                <FontAwesomeIcon 
-                    icon={faBookmark} 
-                    style={{
-                        fontSize: 20, 
-                        marginTop: 10, 
-                        marginRight: 20, 
-                        marginLeft: 30,
-                        transition: "font-size 0.3s, color 0.3s",
-                        cursor: "pointer",
-                    }} 
-                    onClick={handleBookMark} />
-
-                <FontAwesomeIcon 
-                    icon={faHighlighter} 
-                    style={{
-                        fontSize: 20, 
-                        marginTop: 10, 
-                        marginRight: 20, 
-                        marginLeft: 30,
-                        transition: "font-size 0.3s, color 0.3s",
-                        cursor: "pointer",
-                    }} 
-                    onClick={handleHighlight} />
-
-
-             </div>
-                )}
+                 </div>
+                    
                 <Document className="pdf__canvas" file={paperData.pdfLink} onLoadSuccess={onDocumentLoadSuccess}> 
                    <Page className="pdf__page" pageNumber={pageNumber} renderTextLayer={true} />
                 </Document>
